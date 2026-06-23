@@ -4,27 +4,31 @@
 // 🤟(ILoveYou)
 function getCode(left_gesture, right_gesture) {
   let code_array = {
-    "Thumb_Up": 1,
-    "Thumb_Down": 2,
-    "Victory": 3,
-    "Pointing_Up": 4,
-    "Closed_Fist": 5,
-    "Open_Palm": 6,
+    "fist":  1,
+    "one":   2,
+    "peace": 3,
+    "three": 4,
+    "open":  5,
   }
-  let left_code = code_array[left_gesture];
+  let left_code = code_array[left_gesture] || 0;
   let right_code = code_array[right_gesture];
-  // left_codeとright_codeを文字として結合
-  let code = String(left_code) + String(right_code);
-  return code;
+  return String(left_code) + String(right_code);
 }
 
 function getCharacter(code) {
   const codeToChar = {
-    "11": "a", "12": "b", "13": "c", "14": "d", "15": "e", "16": "f",
-    "21": "g", "22": "h", "23": "i", "24": "j", "25": "k", "26": "l",
-    "31": "m", "32": "n", "33": "o", "34": "p", "35": "q", "36": "r",
-    "41": "s", "42": "t", "43": "u", "44": "v", "45": "w", "46": "x",
-    "51": "y", "52": "z", "53": " ", "54": "backspace"
+    // 左なし
+    "01": "a", "02": "b", "03": "c", "04": "d", "05": "e",
+    // 左グー
+    "11": "f", "12": "g", "13": "h", "14": "i", "15": "j",
+    // 左1本
+    "21": "k", "22": "l", "23": "m", "24": "n", "25": "o",
+    // 左ピース
+    "31": "p", "32": "q", "33": "r", "34": "s", "35": "t",
+    // 左3本
+    "41": "u", "42": "v", "43": "w", "44": "x", "45": "y",
+    // 左パー
+    "51": "z",
   };
   return codeToChar[code] || "";
 }
@@ -58,10 +62,46 @@ function setup() {
   let lastChar = "";
   let lastCharTime = millis();
 
-  gotGestures = function (results) {
+gotGestures = function (results) {
     gestures_results = results;
 
-    if (results.gestures.length == 2) {
+    if (results.gestures.length >= 1) {
+      if (game_mode.now == "ready" && game_mode.previous == "notready") {
+        game_mode.previous = game_mode.now;
+        game_mode.now = "playing";
+        document.querySelector('input').value = "";
+        game_start_time = millis();
+      }
+
+      let left_gesture = "none";
+      let right_gesture = "none";
+
+      for (let i = 0; i < results.gestures.length; i++) {
+        let hand = results.handedness[i][0].categoryName;
+        let gesture = results.gestures[i][0].categoryName;
+        if (hand == "Left") {
+          left_gesture = gesture;
+        } else {
+          right_gesture = gesture;
+        }
+      }
+
+      let code = getCode(left_gesture, right_gesture);
+      let c = getCharacter(code);
+
+      let now = millis();
+      if (c === lastChar) {
+        if (now - lastCharTime > 1000) {
+          typeChar(c);
+          lastCharTime = now;
+        }
+      } else {
+        lastChar = c;
+        lastCharTime = now;
+      }
+    }
+  }
+}
       if (game_mode.now == "ready" && game_mode.previous == "notready") {
         // ゲーム開始前の状態から、カメラが起動した後の状態に変化した場合
         game_mode.previous = game_mode.now;
@@ -92,10 +132,10 @@ function setup() {
         lastChar = c;
         lastCharTime = now;
       }
-    }
+    
 
-  }
-}
+  
+
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
