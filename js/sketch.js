@@ -1,7 +1,22 @@
-// ジェスチャーの種類
-// 👍(Thumb_Up), 👎(Thumb_Down), ✌️(Victory), 
-// ☝️(Pointng_Up), ✊(Closed_Fist), 👋(Open_Palm), 
-// 🤟(ILoveYou)
+function getNextPose(char) {
+  const charToCode = {
+    "a":"01","b":"02","c":"03","d":"04","e":"05",
+    "f":"11","g":"12","h":"13","i":"14","j":"15",
+    "k":"21","l":"22","m":"23","n":"24","o":"25",
+    "p":"31","q":"32","r":"33","s":"34","t":"35",
+    "u":"41","v":"42","w":"43","x":"44","y":"45",
+    "z":"51"," ":"52",
+  };
+  const leftEmoji = {"0":"なし","1":"✊","2":"☝️","3":"✌️","4":"🤟","5":"🖐️"};
+  const rightEmoji = {"1":"✊","2":"☝️","3":"✌️","4":"🤟","5":"🖐️"};
+  let code = charToCode[char];
+  if (!code) return null;
+  return {
+    left: leftEmoji[code[0]],
+    right: rightEmoji[code[1]],
+  };
+}
+
 function getCode(left_gesture, right_gesture) {
   let code_array = {
     "fist":  1,
@@ -17,18 +32,12 @@ function getCode(left_gesture, right_gesture) {
 
 function getCharacter(code) {
   const codeToChar = {
-    // 左なし
     "01": "a", "02": "b", "03": "c", "04": "d", "05": "e",
-    // 左グー
     "11": "f", "12": "g", "13": "h", "14": "i", "15": "j",
-    // 左1本
     "21": "k", "22": "l", "23": "m", "24": "n", "25": "o",
-    // 左ピース
     "31": "p", "32": "q", "33": "r", "34": "s", "35": "t",
-    // 左3本
     "41": "u", "42": "v", "43": "w", "44": "x", "45": "y",
-    // 左パー
-    "51": "z",
+    "51": "z", "52": " ", "53": "backspace",
   };
   return codeToChar[code] || "";
 }
@@ -38,12 +47,6 @@ let sample_texts = [
   "the quick brown fox jumps over the lazy dog",
 ];
 
-// ゲームの状態を管理する変数
-// notready: ゲーム開始前 （カメラ起動前）
-// ready: ゲーム開始前（カメラ起動後）
-// playing: ゲーム中
-// finished: ゲーム終了後
-// ready, playing, finished
 let game_mode = {
   now: "notready",
   previous: "notready",
@@ -58,11 +61,10 @@ function setup() {
   p5canvas = createCanvas(320, 240);
   p5canvas.parent('#canvas');
 
-  // When gestures are found, the following function is called. The detection results are stored in results.
   let lastChar = "";
   let lastCharTime = millis();
 
-gotGestures = function (results) {
+  gotGestures = function (results) {
     gestures_results = results;
 
     if (results.gestures.length >= 1) {
@@ -102,40 +104,6 @@ gotGestures = function (results) {
     }
   }
 }
-      if (game_mode.now == "ready" && game_mode.previous == "notready") {
-        // ゲーム開始前の状態から、カメラが起動した後の状態に変化した場合
-        game_mode.previous = game_mode.now;
-        game_mode.now = "playing";
-        document.querySelector('input').value = ""; // 入力欄をクリア
-        game_start_time = millis(); // ゲーム開始時間を記録
-      }
-      let left_gesture;
-      let right_gesture;
-      if (results.handedness[0][0].categoryName == "Left") {
-        left_gesture = results.gestures[0][0].categoryName;
-        right_gesture = results.gestures[1][0].categoryName;
-      } else {
-        left_gesture = results.gestures[1][0].categoryName;
-        right_gesture = results.gestures[0][0].categoryName;
-      }
-      let code = getCode(left_gesture, right_gesture);
-      let c = getCharacter(code);
-
-      let now = millis();
-      if (c === lastChar) {
-        if (now - lastCharTime > 1000) {
-          // 1秒以上cが同じ値である場合の処理
-          typeChar(c);
-          lastCharTime = now;
-        }
-      } else {
-        lastChar = c;
-        lastCharTime = now;
-      }
-    
-
-  
-
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -145,15 +113,12 @@ gotGestures = function (results) {
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-// 入力欄に文字を追加する場合は必ずこの関数を使用してください。
 function typeChar(c) {
   if (c === "") {
     console.warn("Empty character received, ignoring.");
     return;
   }
-  // inputにフォーカスする
   document.querySelector('input').focus();
-  // 入力欄に文字を追加または削除する関数
   const input = document.querySelector('input');
   if (c === "backspace") {
     input.value = input.value.slice(0, -1);
@@ -162,7 +127,6 @@ function typeChar(c) {
   }
 
   let inputValue = input.value;
-  // #messageのinnerTextを色付けして表示
   const messageElem = document.querySelector('#message');
   const target = messageElem.innerText;
   let matchLen = 0;
@@ -175,36 +139,25 @@ function typeChar(c) {
   }
   const matched = target.slice(0, matchLen);
   const unmatched = target.slice(matchLen);
-  console.log(`Matched: ${matched}, Unmatched: ${unmatched}`);
   messageElem.innerHTML =
     `<span style="background-color:lightgreen">${matched}</span><span style="background-color:transparent">${unmatched}</span>`;
 
-
-
-
-  // もしvalueの値がsample_texts[0]と同じになったら、[0]を削除して、次のサンプル文章に移行する。配列長が0になったらゲームを終了する
   if (document.querySelector('input').value == sample_texts[0]) {
-    sample_texts.shift(); // 最初の要素を削除
-    console.log(sample_texts.length);
+    sample_texts.shift();
     if (sample_texts.length == 0) {
-      // サンプル文章がなくなったらゲーム終了
       game_mode.previous = game_mode.now;
       game_mode.now = "finished";
       document.querySelector('input').value = "";
       const elapsedSec = ((millis() - game_start_time) / 1000).toFixed(2);
       document.querySelector('#message').innerText = `Finished: ${elapsedSec} sec`;
     } else {
-      // 次のサンプル文章に移行
       document.querySelector('input').value = "";
       document.querySelector('#message').innerText = sample_texts[0];
     }
   }
-
 }
 
-
 function startWebcam() {
-  // If the function setCameraStreamToMediaPipe is defined in the window object, the camera stream is set to MediaPipe.
   if (window.setCameraStreamToMediaPipe) {
     cam = createCapture(VIDEO);
     cam.hide();
@@ -223,15 +176,12 @@ function startWebcam() {
   }
 }
 
-
 function draw() {
   background(127);
   if (cam) {
     image(cam, 0, 0, width, height);
   }
-  // 各頂点座標を表示する
-  // 各頂点座標の位置と番号の対応は以下のURLを確認
-  // https://developers.google.com/mediapipe/solutions/vision/hand_landmarker
+
   if (gestures_results) {
     if (gestures_results.landmarks) {
       for (const landmarks of gestures_results.landmarks) {
@@ -243,14 +193,8 @@ function draw() {
       }
     }
 
-    // ジェスチャーの結果を表示する
     for (let i = 0; i < gestures_results.gestures.length; i++) {
-      noStroke();
-      fill(255, 0, 0);
-      textSize(10);
       let name = gestures_results.gestures[i][0].categoryName;
-      let score = gestures_results.gestures[i][0].score;
-      let right_or_left = gestures_results.handednesses[i][0].hand;
       let pos = {
         x: gestures_results.landmarks[i][0].x * width,
         y: gestures_results.landmarks[i][0].y * height,
@@ -263,7 +207,6 @@ function draw() {
   }
 
   if (game_mode.now == "notready") {
-    // 文字の後ろを白で塗りつぶす
     let msg = "Press the start button to begin";
     textSize(18);
     let tw = textWidth(msg) + 20;
@@ -294,7 +237,6 @@ function draw() {
     text(msg, tx, ty);
   }
   else if (game_mode.now == "playing") {
-    // ゲーム中のメッセージ
     let elapsedSec = ((millis() - game_start_time) / 1000).toFixed(2);
     let msg = `${elapsedSec} [s]`;
     textSize(18);
@@ -309,9 +251,29 @@ function draw() {
     fill(0);
     textAlign(CENTER, CENTER);
     text(msg, tx, ty);
+
+    // 次のポーズ表示
+    let inputVal = document.querySelector('input').value;
+    let target = sample_texts[0];
+    let nextChar = target[inputVal.length];
+    if (nextChar) {
+      let pose = getNextPose(nextChar);
+      if (pose) {
+        let hint = `次: "${nextChar}" → 左:${pose.left} 右:${pose.right}`;
+        textSize(16);
+        let hw = textWidth(hint) + 20;
+        let hh = 30;
+        rectMode(CENTER);
+        fill(255, 230, 100, 220);
+        noStroke();
+        rect(width / 2, height - hh, hw, hh, 8);
+        fill(0);
+        textAlign(CENTER, CENTER);
+        text(hint, width / 2, height - hh);
+      }
+    }
   }
   else if (game_mode.now == "finished") {
-    // ゲーム終了後のメッセージ
     let msg = "Game finished!";
     textSize(18);
     let tw = textWidth(msg) + 20;
@@ -326,7 +288,4 @@ function draw() {
     textAlign(CENTER, CENTER);
     text(msg, tx, ty);
   }
-
 }
-
-
