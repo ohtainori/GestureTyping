@@ -5,7 +5,7 @@ function getNextPose(char) {
     "k":"21","l":"22","m":"23","n":"24","o":"25",
     "p":"31","q":"32","r":"33","s":"34","t":"35",
     "u":"41","v":"42","w":"43","x":"44","y":"45",
-    "z":"51"," ":"52",
+    "z":"51"," ":"52","backspace":"53",
   };
   const leftEmoji = {"0":"なし","1":"✊","2":"☝️","3":"✌️","4":"🤟","5":"🖐️"};
   const rightEmoji = {"1":"✊","2":"☝️","3":"✌️","4":"🤟","5":"🖐️"};
@@ -255,7 +255,14 @@ function draw() {
     // 次のポーズ表示
     let inputVal = document.querySelector('input').value;
     let target = sample_texts[0];
-    let nextChar = target[inputVal.length];
+    let isCorrect = true;
+    for (let i = 0; i < inputVal.length; i++) {
+      if (inputVal[i] !== target[i]) {
+        isCorrect = false;
+        break;
+      }
+    }
+    let nextChar = isCorrect ? target[inputVal.length] : "backspace";
     if (nextChar) {
       let pose = getNextPose(nextChar);
       if (pose) {
