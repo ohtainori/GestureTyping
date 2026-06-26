@@ -94,7 +94,17 @@ function setup() {
       let now = millis();
       if (c === lastChar) {
         if (now - lastCharTime > 1000) {
-          typeChar(c);
+          let inputVal = document.querySelector('input').value;
+          let target = sample_texts[0];
+          let isCorrect = true;
+          for (let i = 0; i < inputVal.length; i++) {
+            if (inputVal[i] !== target[i]) { isCorrect = false; break; }
+          }
+          if (c === "backspace") {
+            typeChar(c);
+          } else if (isCorrect && c === target[inputVal.length]) {
+            typeChar(c);
+          }
           lastCharTime = now;
         }
       } else {
